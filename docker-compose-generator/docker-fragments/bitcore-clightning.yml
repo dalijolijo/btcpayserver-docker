@@ -1,0 +1,37 @@
+version: "3"
+
+services:
+  clightning_bitcore:
+    image: nicolasdorier/clightning:aeafe4dbe7d5c61f664c18417698866b0d70252f-2
+    container_name: btcpayserver_clightning_bitcore
+    restart: unless-stopped
+    environment:
+      LIGHTNINGD_NETWORK: ${NBITCOIN_NETWORK:-regtest}
+      LIGHTNINGD_CHAIN: btx
+      LIGHTNINGD_EXPLORERURL: "http://nbxplorer:32838/"
+      LIGHTNINGD_OPT: |
+        bitcoin-datadir=/etc/bitcore
+        bitcoin-rpcconnect=bitcored
+        bind-addr=0.0.0.0:9735
+        announce-addr=${BTCPAY_HOST}:9736
+        network=${NBITCOIN_NETWORK:-regtest}
+        alias=${LIGHTNING_ALIAS}
+        chain=btx
+    volumes:
+      - "clightning_bitcore_datadir:/root/.lightning"
+      - "bitcore_datadir:/etc/bitcore"
+      - "nbxplorer_datadir:/root/.nbxplorer"
+    ports:
+      - "9736:9735"
+    links:
+      - nbxplorer
+      - bitcored
+  btcpayserver:
+    environment:
+      BTCPAY_BTXLIGHTNING: "type=clightning;server=unix://etc/clightning_bitcore/lightning-rpc"
+    volumes:
+      - "clightning_bitcore_datadir:/etc/clightning_bitcore"
+    links:
+      - clightning_bitcore
+volumes:
+  clightning_bitcore_datadir:
